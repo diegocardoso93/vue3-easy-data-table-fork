@@ -34,7 +34,7 @@
                 'hasShadow': header.value === lastFixedColumn,
               }"
               :style="getFixedDistance(header.value)"
-              @click="(header.sortable && header.sortType) ? updateSortField(header.value, header.sortType) : null"
+              @click="(header.sortable && header.sortType) ? updateSortField(header.value, header.sortType, header.sortFunction) : null"
             >
               <MutipleSelectCheckBox
                 v-if="header.text === 'checkbox'"
@@ -62,6 +62,11 @@
         <slot
           v-if="ifHasBodySlot"
           name="body"
+          v-bind="{
+            items,
+            itemsForRender,
+            headerColumns
+          }"
         />
         <template v-else>
           <tbody
@@ -131,7 +136,7 @@
         v-if="!hideRowsPerPage"
         class="footer__rows-per-page"
       >
-        rows per page:
+        {{ labelRowsPerPage }}{{' '}}
         <RowsSelector
           v-model="rowsPerPageReactive"
           :rows-items="rowsItemsComputed"
@@ -139,7 +144,7 @@
       </div>
       <div class="footer__items-index">
         {{ `${firstIndexOfItemsInCurrentPage}-${lastIndexOfItemsInCurrentPage}` }}
-        of {{ totalItemsLength }}
+        {{ labelCurrentPageSeparator }} {{ totalItemsLength }}
       </div>
 
       <slot
@@ -191,9 +196,12 @@ import type {
   SortType, Header, Item, ServerOptions, FilterOption,
 } from '../types/main';
 
+type sortFunctionType = (itens: Item[], sortDesc: boolean) => Item[];
+
 type ClientSortOptions = {
   sortBy: string,
   sortDesc: boolean,
+  sortFunction?: sortFunctionType | null
 }
 
 type HeaderForRender = {
@@ -201,6 +209,7 @@ type HeaderForRender = {
   value: string,
   sortable?: boolean,
   sortType?: SortType | 'none',
+  sortFunction?: sortFunctionType | null,
   fixed?: Boolean,
   width?: number,
 }
@@ -377,6 +386,14 @@ const props = defineProps({
     type: Boolean,
     default: false,
   },
+  labelRowsPerPage: {
+    type: String,
+    default: 'rows per page:',
+  },
+  labelCurrentPageSeparator: {
+    type: String,
+    default: 'of',
+  },
 });
 
 const {
@@ -479,6 +496,7 @@ const initClientSortOptions = (): ClientSortOptions | null => {
     return {
       sortBy: props.sortBy,
       sortDesc: props.sortType === 'desc',
+      sortFunction: null
     };
   }
   return null;
@@ -692,7 +710,7 @@ watch(rowsPerPageReactive, (value) => {
   currentPaginationNumber.value = 1;
 });
 
-const updateSortField = (newSortBy: string, oldSortType: SortType | 'none') => {
+const updateSortField = (newSortBy: string, oldSortType: SortType | 'none', sortFunction?: sortFunctionType | null) => {
   let newSortType: SortType | null = null;
   if (oldSortType === 'none') {
     newSortType = 'asc';
@@ -715,6 +733,7 @@ const updateSortField = (newSortBy: string, oldSortType: SortType | 'none') => {
     clientSortOptions.value = {
       sortBy: newSortBy,
       sortDesc: newSortType === 'desc',
+      sortFunction
     };
   }
 };
@@ -723,10 +742,10 @@ const updateSortField = (newSortBy: string, oldSortType: SortType | 'none') => {
 const itemsSorting = computed((): Item[] => {
   if (isServerSideMode.value) return props.items;
   if (clientSortOptions.value === null) return itemsFiltering.value;
-  const { sortBy, sortDesc } = clientSortOptions.value;
+  const { sortBy, sortDesc, sortFunction } = clientSortOptions.value;
   const itemsFilteringSorted = [...itemsFiltering.value];
   // eslint-disable-next-line vue/no-side-effects-in-computed-properties
-  return itemsFilteringSorted.sort((a, b) => {
+  return sortFunction? sortFunction(itemsFilteringSorted, sortDesc) : itemsFilteringSorted.sort((a, b) => {
     if (getItemValue(sortBy, a) < getItemValue(sortBy, b)) return sortDesc ? 1 : -1;
     if (getItemValue(sortBy, a) > getItemValue(sortBy, b)) return sortDesc ? -1 : 1;
     return 0;
@@ -896,7 +915,7 @@ defineExpose({
 
 </script>
 
-<style lang="scss" scoped>
+<style lang="scss">
   .vue3-easy-data-table {
     position: relative;
     border: 1px solid v-bind(tableBorderColor);
@@ -1104,6 +1123,7 @@ defineExpose({
           tr {
             height: v-bind(rowHeightPx);
             color: v-bind(rowFontColor);
+            background-color: v-bind(rowBackgroundColor);
             &:nth-child(-n+3) {
               td {
                 border-bottom: 1px solid v-bind(rowBorderColor)!important;
@@ -1122,7 +1142,6 @@ defineExpose({
             }
           }
           td {
-            background-color: v-bind(rowBackgroundColor);
             border: none;
             border-bottom: 1px solid v-bind(rowBorderColor);
             position: relative;
@@ -1134,7 +1153,7 @@ defineExpose({
                 color: v-bind(rowHoverFontColor);
               }
             }
-            tr:nth-child(2n) td{
+            tr:nth-child(2n) {
               color: v-bind(evenRowFontColor);
               background-color: v-bind(evenRowBackgroundColor);
             }

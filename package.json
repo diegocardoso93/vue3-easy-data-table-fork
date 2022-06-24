@@ -1,6 +1,6 @@
 {
-  "name": "vue3-easy-data-table",
-  "author": "HC200ok",
+  "name": "vue3-easy-data-table-fork",
+  "author": "diegocardoso93",
   "description": "A customizable and easy-to-use data table component made with Vue.js 3.x.",
   "private": false,
   "version": "1.2.16",
@@ -17,7 +17,7 @@
     "mvue3-component",
     "vue-component"
   ],
-  "homepage": "https://github.com/HC200ok/vue3-easy-data-table",
+  "homepage": "https://github.com/diegocardoso93/vue3-easy-data-table-fork",
   "main": "./dist/vue3-easy-data-table.umd.js",
   "module": "./dist/vue3-easy-data-table.es.js",
   "exports": {
