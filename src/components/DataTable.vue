@@ -695,7 +695,7 @@ const currentPaginationNumber = ref(isServerSideMode.value ? props.serverOptions
 const { items } = toRefs(props);
 watch(items, () => {
   if (!isServerSideMode.value) currentPaginationNumber.value = 1;
-}, { deep: true });
+});
 
 // rows per page
 const rowsPerPageReactive = ref(isServerSideMode.value ? props.serverOptions.rowsPerPage : props.rowsPerPage);
